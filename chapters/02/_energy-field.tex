@@ -2,10 +2,21 @@
 \label{ch:02_energy-field}
 
 \begin{universityTask}
-    Dieser Text enthält die ursprüngliche Aufgabenstellung des entsprechenden Teils der Einsendeaufgabe für das entsprechende Modul.
+    Aus Strategiespielen kennt man Ressourcenfelder, die Kristalle, Energie, o. ä. liefern. Ein bestimmter Einheitentyp kann diese Ressource dann \q{ernten}, so dass damit Gebäude, Einheiten, usw. gebaut werden können. Je nach Strategiespiel wachsen diese auch nach.
+
+    Erzeugen Sie nun Ihre eigene Spiellogik:  
+    Das Energiefeld startet mit 20 Energiepunkten. Pro Runde liefert wächst es um 1 Punkt an (bis zu einem Maximum von 30 Punkten). Dies geschieht allerdings nur, solange das Energiefeld auch mindestens eine Kapazität von 1 hat. Sinkt die Zahl der Energiepunkte im Feld auf 0, vergehen 3 Spielrunden, bevor das Feld sich wieder wie gewohnt regeneriert.  
+    Die \q{Energieextraktoren} von drei unterschiedlichen Partien extrahieren nun die Energie dieses Felds. Jeder Arbeiter kann pro Runde bis zu drei Punkte Energie extrahieren und in seinen Batterien abtransportieren. Pro Runde kann ein Extraktor am Feld arbeiten; die Extraktoren kommen \q{reihum} zum Feld.
+
+    \begin{enumerate}[label=(\arabic*)]
+        \item Implementieren Sie die grundsätzliche Spiellogik des Energiefeldes sowie der drei Energieextraktoren.
+        \item Implementieren Sie die Variante, in der die Extraktoren stets das mögliche Maximum von drei Punkten (bzw. weniger, wenn das Energiefeld nicht mehr liefern kann) liefert.
+        \item Lassen Sie die Variante aus (2) für 10, 20 und 50 Runden laufen. Plotten Sie den akkumulierten Gewinn der Extraktoren über die Zeit sowie den Stand des Energiefeldes.
+        \item Welcher Sachverhalt beschreibt die Strategie Ergebnisse aus (3)? Beschreiben Sie allgemein und mit eigenen Worten. Diskutieren Sie außerdem, ob ein Zusammenhang mit dem Gefangenendilemma besteht, und wenn ja, welcher.
+        \item Implementieren Sie eine alternative Strategie. Können Sie eine Variante entwickeln, die den Gewinn der Extraktoren nach 50 Spielrunden maximiert (Maximierung der sozialen Wohlfahrt)?
+    \end{enumerate}
     
     \universityPoints{50}
 \end{universityTask}
 
-Dieser Text enthält die Lösung der obigen Aufgabenstellung. 
-Ein Teil der Lösung ist aus einer Quelle entnommen \cite{000_ABCDE01_official-study-book}.
+Dieser Text enthält die Lösung der obigen Aufgabenstellung.

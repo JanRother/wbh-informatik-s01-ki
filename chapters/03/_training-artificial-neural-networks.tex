@@ -2,10 +2,55 @@
 \label{ch:03_training-artificial-neural-networks}
 
 \begin{universityTask}
-    Dieser Text enthält die ursprüngliche Aufgabenstellung des entsprechenden Teils der Einsendeaufgabe für das entsprechende Modul.
+    Künstliche Neuronale Netze (englisch kurz ANNs) sind parametrierbare Funktionsapproximatoren. Das heißt, dass theoretisch beliebige Funktionen nachbilden können, sofern genügend Datenpunkte existieren. ANNs bestehen aus Neuronen mit Aktivierungsfunktionen sowie Verbindungen dazwischen. Die Verbindungen lassen sich ein Gewichtsmatrizen ausdrücken, wobei $W^{(1)}$ für die der Eingabeschicht zur ersten verdeckten, $W^{(2)}$ für die Gewichte von der ersten verdeckten Schicht zur nächsten stehen, usw.
+
+    Einfache ANNs lassen sich leicht in verschiedenen Programmiersprachen implementieren, auch ohne komplexe Bibliotheken wie PyTorch oder Tensorflow. Der folgende Python-Code implementiert ein Multi-Layer Perceptron (MLP) mit einer verdeckten Schicht (2 Eingabeneuronen, 3 verdeckte, 1 Neuron in der Ausgabeschicht):
+
+    \begin{snippet}[H]
+        \centering
+        \begin{minted}[style=manni]{python}
+            import numpy as np
+
+            class ANN:
+                def __init__(self):
+                self.W1 = np.random.rand(2, 3)
+                self.W2 = np.random.rand(3, 1)
+
+            @classmethod
+            def sigmoid(x):
+                return 1 / (1 + np.exp(-x))
+
+            def forward(self, x):
+                z = sigmoid(np.dot(x, self.W1))
+                y = sigmoid(np.dot(z, self.W2))
+                return y
+        \end{minted}
+    \end{snippet}
+
+    Damit kann beispielsweise die Funktion XOR approximiert werden, wenn die Gewichtsmatrizen (in $W^{(1)}$ und $W^{(2)}$) die richtigen Werte beinhalten:
+
+    \begin{snippet}[H]
+        \centering
+        \begin{minted}[style=manni]{python}
+            xor_inputs = np.vstack(([0, 0], [0, 1], [1, 0], [1, 1]))
+            ann = ANN()
+            xor = ann.forward(xor_inputs)
+        \end{minted}
+    \end{snippet}
+\end{universityTask}
+
+\begin{universityTask}
+    Nun stellen evolutionäre Algorithmen (EAs) eine Form von Heuritik dar, die zur Optimierung genutzt werden können. EAs können beispielsweise zum Training von ANNs benutzt werden und erleben in der Forschung zur Zeit eine Renaissance, z. B. beim Evolutionary (Deep) Reinforcement Learning.  
+	Ein EA enthält einen Pool von Indivduen, wobei jedes Individuum einen Lösungskandidaten repräsentiert. Jedes Individuum besitzt eine Fitness; je besser ein Individuum ist, desto höher ist seine Fitness.  
+    Während des Training werden nun zunächst zwei Individuen selektiert (bspw. das beste und ein zufällig anderes). Aus diesen beiden \q{Eltern} wird ein neues Individuum geschaffen, indem die Genome der beiden Individuen überkreuzt werden (zufällig aus einem der Elternteile gewählt). Die \q{Mutation} verändert dann zusätzlich die Werte um einen kleinen zufälligen Wert. Dann wird die Fitness des neuen Individuums bestimmt. Erreicht sie einen bestimmten, vorgegebenen Grenzwert, ist die Heuristik erfolgreich gewesen.
+
+    \begin{enumerate}[label=(\alph*)]
+        \item Was ist in unserem Fall das \q{Genom} des ANN?
+        \item Implementieren Sie eine Fitness-Funktion für die Individuen. Sie können sich dafür beispielsweise am Mean Squared Error bedienen. Als Eingaben für das Training nutzen Sie \texttt{xor\_inputs}; die gewünschten Ausgaben werden durch \texttt{np.array([0, 1, 1,0]).reshape(-1,1)} repräsentiert.
+        \item Implementieren Sie den EA für das Training. Wie sieht das Ergebnis des besten Individuums nach 10, 20, 50 und 100 Runden aus?
+    \end{enumerate}
     
     \universityPoints{30}
 \end{universityTask}
 
-Dieser Text enthält die Lösung der obigen Aufgabenstellung. 
-Ein Teil der Lösung ist aus einer Quelle entnommen \cite{000_ABCDE01_official-study-book}.
+Dieser Text enthält die Lösung der obigen Aufgabenstellung.
