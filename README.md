@@ -9,6 +9,8 @@
 > 
 > Jan Rother  
 > janrother02@gmail.com  
+> 
+> 2026-01
 
 ## Table of Contents
 
@@ -16,6 +18,7 @@
 - [Wilhelm Büchner Hochschule | Assignment: Einführung und Anwendung der Künstlichen Intelligenz](#wilhelm-büchner-hochschule--assignment-einführung-und-anwendung-der-künstlichen-intelligenz)
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
+  - [Getting Started](#getting-started)
   - [Usage](#usage)
     - [Repository](#repository)
     - [Toolchain](#toolchain)
@@ -52,6 +55,31 @@
 ## Introduction
 
 This repository contains the artifact for the assignment of the module "Einführung und Anwendung der Künstlichen Intelligenz" at the Wilhelm Büchner Hochschule.
+
+## Getting Started
+
+This checklist helps getting started with the template thesis and provides information about what to configure and what to set up for the document to fit the actual needs.
+
+- [ ] Create an empty **repository** on *GitHub* for the project and clone it on the local machine.
+- [ ] Add a *GitHub* personal access token with `repo` scope as `GH_TOKEN` secret in the repository settings, to enable automatic releases.
+- [ ] Clone the **template repository** and copy it into the local repository.
+- [ ] Make an initial **commit** including the `README.md`, `.gitignore`, and `.gitattributes` files with the message `initial commit`.
+- [ ] Set up the **toolchain** by installing the required software on your system.
+- [ ] Add information about the document in the [Introduction](#introduction) section of this [README.md](README.md) file.
+- [ ] Adjust the **pipeline configuration** in the `.github/workflows/` directory:
+  - Remove the `docker-image.yaml` workflow.
+  - Adjust the `document.yaml` workflow, especially the environment variables of the `prepare_metadata` job (`ROOT_NAME` for the main file name without extension and `BASE_NAME` for the base name of the output files).
+- [ ] Adjust the **document configuration**:
+  - Rename the main file `main.tex`, for example to `thesis.tex` or `assignment.tex`.
+  - Adjust the output file name in the `.latexmkrc` file and the workflow configuration accordingly.
+- [ ] Configure the **document** by adjusting the settings in the files located in the `./meta/` directory.
+  - Adjust the content of the `parameters.tex` file to individualize the document.
+  - Remove the `example` chapter and the `template` chapter from the `./chapters/` directory.
+  - Remove the `p-00_example-picture.png` from the `./images/` directory.
+  - Remove template literature from the `literature.bib` file.
+  - Add new chapters as needed in the `./chapters/` directory and stick to the conventions.
+  - Adjust the `main.tex` accordingly to include only the necessary content.
+- [ ] Start **writing**.
 
 ## Usage
 
