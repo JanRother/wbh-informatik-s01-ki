@@ -13,4 +13,121 @@
     \universityPoints{20}
 \end{universityTask}
 
-Dieser Text enthält die Lösung der obigen Aufgabenstellung.
+\section{Quicksort}
+\label{sec:01-01_quicksort}
+
+Der in der Aufgabenstellung beschriebene Sortieralgorithmus ist als \textit{Quicksort} bekannt und ist eine klassisches Beispiel für \textit{Divide-and-Conquer}-Algorithmen. Dabei wird ein konkretes Problem zerlegt in kleinere Teilprobleme, welche wiederum einfacher lösbar sind. Eine besonders wichtige Rolle spielt hierbei das Konzept der Rekursion \cite[S. 49 ff.]{003_KII11_basics-of-artificial-intelligence}, also die Fähigkeit eines Algorithmus, sich selbst aufzurufen. Um zu verhindern, dass dies unendlich oft geschieht, erfordern rekursive Algorithmen stets eine Abbruchbedingung, bei dessen Erfüllung die Rekursion terminiert. Diese Abbruchbedingung ist der trivialste Fall, auf den das Problem reduzierbar ist, der sogenannte Basisfall. Ab Erreichen des Basisfalls werden die Teillösungen schrittweise wieder zu einer Gesamtlösung zusammengesetzt, bis das Programm auf die Ebene des ursprünglichen Aufrufs zurückgekehrt ist. Dieses Prinzip wird Backtracking \cite[S. 43]{003_KII11_basics-of-artificial-intelligence} genannt.
+
+\textit{Quicksort} ist ein Sortieralgorithmus für Listen. Listen erfüllen bestimmte Eigenschaften \cite[S. 51]{003_KII11_basics-of-artificial-intelligence}:
+
+\begin{itemize}
+    \item Die Zahl ihrer Elemente ist beliebig.
+    \item Leere Listen sind möglich, ihre Länge ist Null.
+    \item Listen können selbst Listen enthalten.
+    \item Elemente einer Liste haben eine Reihenfolge und eine Position.
+    \item Das Mehrfachvorkommen von Elementen ist möglich.
+    \item Elemente einer Liste müssen vom gleichen Typ sein.
+\end{itemize}
+
+Eine Liste ist generell dann sortiert, wenn ihre Teillisten sortiert sind. Die kleinsten möglichen Teillisten sind die Listen $[]$ und $[x]$ mit entweder keinem Element oder genau einem Element $x$. Dadurch bilden sie die Basisfälle für die Rekursion. Zu Beginn des \textit{Quicksort}-Algorithmus wird eine unsortierte Liste durch die Wahl eines zufälligen Trennelements, häufig als \textit{Pivot} bezeichnet, in zwei Hälften unterteilt. Alle Elemente kleiner als das Trennelement werden in der linken Liste gespeichert, alle größeren in der rechten. Mit den beiden Teillisten \q{links} und \q{rechts} wird das Verfahren dann erneut durchgeführt, bis die Basisfälle erreicht sind. Anschließend wird aus den sortierten Teillisten die Gesamtliste zusammengesetzt, indem die linke Liste, das Trennelement und die rechte Liste aneinandergehängt werden.
+
+Dieses Verfahren lässt sich in Pseudocode abbilden:
+
+\begin{snippet}[htb]
+    \centering
+    \begin{codebox}{text}{Pseudocode für Quicksort}
+        FUNCTION QuickSort(list):
+            // Base Case: Already sorted.
+            IF length of list <= 1 THEN
+                RETURN list
+
+            // Step 01: Choose Pivot.
+            pivot <- first element of list
+            rest <- all elements of list except the pivot
+
+            // Step 02: Partition List into smaller and greater Lists.
+            smaller <- empty list
+            greater <- empty list
+            FOR each element X in rest DO
+                IF X < pivot THEN
+                    append X to smaller
+                ELSE
+                    append X to greater
+
+            // Step 03: Recursively sort Sublists.
+            sortedSmaller <- QuickSort(smaller)
+            sortedGreater <- QuickSort(greater)
+
+            // Step 04: Combine Results.
+            RETURN concatenate(sortedSmaller, [pivot], sortedGreater)
+        END FUNCTION
+    \end{codebox}
+    \caption{Pseudocode für den \textit{Quicksort}-Algorithmus}
+    \label{snippet:01-01_quicksort-pseudocode}
+\end{snippet}
+
+Angenommen, diese Funktion würde mit der Liste $[5, 7, 2, 0, 3, 1, 4, 6, 9, 8]$ aufgerufen, so würde das Trennelement $5$ gewählt werden. Alle Elemente kleiner als $5$ würden in der linken Liste $[2, 0, 3, 1, 4]$ gespeichert, alle größeren in der rechten Liste $[7, 6, 9, 8]$. Anschließend würde die Funktion mit den beiden Teillisten aufgerufen werden, bis die Basisfälle erreicht sind. Schließlich würden die sortierten Teillisten $[0, 1, 2, 3, 4]$ und $[6, 7, 8, 9]$ mit dem Trennelement $5$ zu der Gesamtliste $[[0, 1, 2, 3, 4]], [5], [6, 7, 8, 9]]$ zusammengesetzt werden, was gemäß den Listeneigenschaften äquivalent zu der sortierten Liste $[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]$ ist.
+
+\section{Implementierung in PROLOG}
+\label{sec:01-02_quicksort-prolog}
+
+Bei PROLOG handelt es sich um eine 1972 von Alain Colmerauer entwickelte Programmiersprache. Das Akronym steht für \q{Programmation en Logique} und weist bereits darauf hin, dass es sich um eine funktionale und deskriptive Sprache handelt, die auf der Prädikatenlogik basiert. Anstelle von Anweisungen und Kontrollstrukturen, wie sie in imperativen Sprachen üblich sind, besteht ein PROLOG-Programm aus Fakten und Regeln. Ein PROLOG-Interpreter versucht, durch logische Schlussfolgerungen die gestellten Anfragen zu beantworten, indem er diese Fakten und Regeln anwendet. \cite[S. 36 f.]{003_KII11_basics-of-artificial-intelligence}
+
+Setzt man den \autoref{snippet:01-01_quicksort-pseudocode} in PROLOG um, so könnte dies wie folgt aussehen:
+
+\begin{snippet}[htb]
+    \centering
+    \begin{codebox}{prolog}{PROLOG-Implementierung von \textit{Quicksort}}
+        quicksort([], []).
+        quicksort([X], [X]).
+
+        quicksort([Pivot|Rest], Sorted) :-
+            partition(Pivot, Rest, Smaller, Greater),
+            quicksort(Smaller, SortedSmaller),
+            quicksort(Greater, SortedGreater),
+            append(SortedSmaller, [Pivot|SortedGreater], Sorted).
+
+        partition(_, [], [], []).
+
+        partition(Pivot, [X|Rest], [X|Smaller], Greater) :-
+            X < Pivot,
+            partition(Pivot, Rest, Smaller, Greater).
+
+        partition(Pivot, [X|Rest], Smaller, [X|Greater]) :-
+            X >= Pivot,
+            partition(Pivot, Rest, Smaller, Greater).
+    \end{codebox}
+    \caption{PROLOG-Implementierung des \textit{Quicksort}-Algorithmus}
+    \label{snippet:01-02_quicksort-prolog}
+\end{snippet}
+
+Die Implementierung besteht aus drei Prädikaten:
+
+\begin{itemize}
+    \item \texttt{quicksort/2} ist das Hauptprädikat, welches die unsortierte Liste entgegennimmt und das erste Element als Pivot auswählt. Es ruft die Partitionierung der Liste auf und sortiert anschließend die Teillisten rekursiv, bevor es die Ergebnisse kombiniert.
+    \item \texttt{partition/4} teilt die Liste in kleinere und größere Elemente auf, basierend auf dem Pivot. Dabei existiert jeweils eine Regel für kleinere Elemente und eine für größere oder gleich große Elemente.
+    \item \texttt{append/3} ist ein in PROLOG eingebautes Prädikat, welches Listen aufspalten oder zusammenziehen kann \cite[S. 69]{003_KII11_basics-of-artificial-intelligence}. Es wird hier verwendet, um die sortierten Teillisten mit dem Pivot in der Mitte zu einer Gesamtliste zu kombinieren.
+\end{itemize}
+
+Die Basisfälle für die Rekursion sind die leere Liste und die Liste mit einem Element, welche beide bereits sortiert sind, wobei der Fall des einzelnen Elements zusätzlich auch durch die Partitionierung abgedeckt wird, da das Pivot-Element in diesem Fall die einzige Zahl ist und somit automatisch in der richtigen Position liegt.
+
+Der Aufruf der Funktion mit der Liste $[5, 7, 2, 0, 3, 1, 4, 6, 9, 8]$ erzeugt wie erwartet die sortierte Liste $[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]$, wie in \autoref{snippet:01-02_quicksort-prolog-call} dargestellt:
+
+\begin{snippet}[htb]
+    \centering
+    \begin{codebox}{prolog}{Aufruf von \texttt{quicksort/2} in PROLOG}
+        ?- quicksort([5, 7, 2, 0, 3, 1, 4, 6, 9, 8], X).
+        X = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].
+    \end{codebox}
+    \caption{Aufruf von \texttt{quicksort/2} in PROLOG}
+    \label{snippet:01-02_quicksort-prolog-call}
+\end{snippet}
+
+\section{Fazit}
+\label{sec:01-03_conclusion}
+
+In \autoref{sec:01-01_quicksort} wurde der Pseudocode in imperativer Form entwickelt, während in \autoref{sec:01-02_quicksort-prolog} die konkrete Implementierung naturgegeben in deskriptiver Form erfolgte. Da die imperative Form in vielen Fällen als intuitiver empfunden wird, wurde diese Entscheidung getroffen um das Verständnis des Algorithmus zu erleichtern.
+
+Sowohl der \nameref{snippet:01-01_quicksort-pseudocode} als auch die \nameref{snippet:01-02_quicksort-prolog} wählen stets das erste Listenelement als Pivot aus. Neben dieser Strategie existieren aber auch weitere Möglichkeiten, wie beispielsweise die Auswahl eines zufälligen Elements oder des Medianwerts als Pivot, um die Leistung des Algorithmus zu verbessern. In der Praxis kann die Wahl des Pivots einen Einfluss auf die Effizienz von \textit{Quicksort} haben.
+
+Insgesamt lässt sich beobachten, dass die Implementierung von \textit{Quicksort} in PROLOG sehr elegant und direkt die logische Struktur des Algorithmus widerspiegelt. Durch die Verwendung von Rekursion und der natürlichen Handhabung von Listen in PROLOG wird der Code übersichtlich und leicht verständlich.
