@@ -6,7 +6,7 @@
 
     Erzeugen Sie nun Ihre eigene Spiellogik:  
     Das Energiefeld startet mit 20 Energiepunkten. Pro Runde liefert wächst es um 1 Punkt an (bis zu einem Maximum von 30 Punkten). Dies geschieht allerdings nur, solange das Energiefeld auch mindestens eine Kapazität von 1 hat. Sinkt die Zahl der Energiepunkte im Feld auf 0, vergehen 3 Spielrunden, bevor das Feld sich wieder wie gewohnt regeneriert.  
-    Die \q{Energieextraktoren} von drei unterschiedlichen Partien extrahieren nun die Energie dieses Felds. Jeder Arbeiter kann pro Runde bis zu drei Punkte Energie extrahieren und in seinen Batterien abtransportieren. Pro Runde kann ein Extraktor am Feld arbeiten; die Extraktoren kommen \q{reihum} zum Feld.
+    Die \q{Energieextraktoren} von drei unterschiedlichen Partien extrahieren nun die Energie dieses Felds. Jeder Arbeiter kann pro Runde bis zu 3 Punkte Energie extrahieren und in seinen Batterien abtransportieren. Pro Runde kann ein Extraktor am Feld arbeiten; die Extraktoren kommen \q{reihum} zum Feld.
 
     \begin{enumerate}[label=(\arabic*)]
         \item Implementieren Sie die grundsätzliche Spiellogik des Energiefeldes sowie der drei Energieextraktoren.
@@ -19,4 +19,345 @@
     \universityPoints{50}
 \end{universityTask}
 
-Dieser Text enthält die Lösung der obigen Aufgabenstellung.
+\section{Spiellogik des Energiefeldes und der Energieextraktoren}
+\label{sec:02-01_game-logic-of-energy-field-and-energy-extractors}
+
+Zur Lösung der Aufgabenstellung wird eine Simulation des Spiels in \textit{Python} mit \textit{Jupyter Notebook} implementiert. Zurückgegriffen wird dabei auf die Bibliotheken \texttt{numpy} für numerische Operationen, \texttt{pandas} für die Datenanalyse sowie \texttt{seaborn} und \texttt{matplotlib} für die Visualisierung.
+
+Die Grundlagen des beschriebenen Spiels lassen sich wie folgt zusammenfassen:
+
+\begin{itemize}
+    \item Ein Energiefeld startet mit 20 Energiepunkten.
+    \item Die maximale Kapazität des Energiefeldes beträgt 30 Punkte.
+    \item Mit jeder Runde wächst das Energiefeld um 1 Punkt, vorausgesetzt, die aktuelle Energie ist größer als 0 und kleiner als 30.
+    \item Sinkt die Energie auf 0, pausiert die Regeneration für 3 Runden.
+    \item Extraktoren können pro Runde jeweils bis zu 3 Punkte Energie extrahieren, abhängig von der verfügbaren Energie im Feld.
+    \item Die Extraktoren wechseln sich reihum ab, pro Runde kann also nur ein Extraktor arbeiten.
+\end{itemize}
+
+Daraus ergeben sich neben der Geschäftslogik, welche die Elemente des Spiels steuert und die Spieldaten erhebt, auch zwei Geschäftsobjekte für das Energiefeld (\texttt{EnergyField}, siehe \autoref{snippet:02-01_energy-field-class}) und die Energieextraktoren (\texttt{ExtractorAgent}, siehe \autoref{snippet:02-01_extractor-agent-class}).
+
+\image{htb}{False}{\defaultImageSize}{g-00_energy-game-class-diagram}{Klassendiagramm der Klassen des Energiespiels}
+
+Die implementierten Geschäftsobjekte aus \autoref{fig:g-00_energy-game-class-diagram} stellen dabei verschiedene Felder und Methoden bereit, um die Spiellogik zu steuern.
+
+\begin{snippet}[htb]
+    \centering
+    \begin{codebox}{python}{Klasse \texttt{EnergyField}}
+        class EnergyField:
+            def __init__(self, energy_start=20, energy_increment_max=1, energy_decrement_max=3, field_capacity=30):
+                self.energy = energy_start
+                self.production_history = [None]
+                self.energy_history = [energy_start]
+                self.energy_increment_max = energy_increment_max
+                self.energy_decrement_max = energy_decrement_max
+                self.field_capacity = field_capacity
+                self.locked_rounds_left = 0
+            
+            def extract_energy(self, energy_to_extract):
+                if self.locked_rounds_left > 0:
+                    self.locked_rounds_left -= 1
+                    self.energy_history.append(self.energy)
+                    self.production_history.append(0)
+                    return 0
+                extracted = min(energy_to_extract, self.energy, self.energy_decrement_max)
+                self.energy -= extracted
+                self.regenerate_energy()
+                return extracted
+            
+            def regenerate_energy(self):
+                initial_energy = self.energy
+                if self.energy == 0:
+                    self.locked_rounds_left = 3
+                self.energy_history.append(self.energy)
+                self.energy = min(self.field_capacity, (self.energy + self.energy_increment_max))
+                self.production_history.append(self.energy - initial_energy)
+    \end{codebox}
+    \caption{Implementierung der Klasse \texttt{EnergyField}}
+    \label{snippet:02-01_energy-field-class}
+\end{snippet}
+
+Das \texttt{EnergyField} (siehe \autoref{snippet:02-01_energy-field-class}) setzt sich wie folgt zusammen:
+
+\begin{itemize}
+    \item \texttt{\_\_init\_\_} initialisiert die Felder des Objekts: die initiale Energie (\texttt{energy}), die Historie der Energieproduktion (\texttt{production\_history}), die Historie der Energiepunkte (\texttt{energy\_history}), die maximal zulässige Energiezunahme pro Runde (\texttt{energy\_increment\_max}), die maximal zulässige Energieentnahme pro Runde (\texttt{energy\_decrement\_max}), die maximale Kapazität des Energiefeldes (\texttt{field\_capacity}) sowie die Anzahl der Runden, die Anzahl der übrigen Runden, in denen das Feld gesperrt ist (\texttt{locked\_rounds\_left}).
+    \item \texttt{extract\_energy} steuert die Energieentnahme durch die Extraktoren. Dafür wird der Zustand des Energiefeldes geprüft und entschieden, ob und wie viel Energie entnommen werden kann. Nach der Entnahme wird die Regeneration des Energiefeldes angestoßen.
+    \item \texttt{regenerate\_energy} steuert die Regeneration des Energiefeldes. Außerdem wird die Historie des Energiefeldes aktualisiert, um die Entwicklung der Energie über die Zeit zu verfolgen. Dabei werden die Ober- und Untergrenzen der Extraktion und der Regeneration eingehalten.
+\end{itemize}
+
+\begin{snippet}[htb]
+    \centering
+    \begin{codebox}{python}{Klasse \texttt{ExtractorAgent}}
+        class ExtractorAgent:
+            def __init__(self, agent_id=-1, strategy='greedy', initial_battery=0):
+                self.agent_id = agent_id
+                self.strategy = strategy
+                self.battery_history = [initial_battery]
+            
+            def decide_extraction(self, field: EnergyField, rounds_left=None):
+                energy_to_extract = 0
+                if self.strategy == 'greedy':
+                    energy_to_extract = field.energy_decrement_max
+                else:
+                    raise ValueError("Unknown strategy.")
+                return energy_to_extract
+            
+            def extract(self, field: EnergyField, rounds_left=None):
+                energy_to_extract = self.decide_extraction(field, rounds_left)
+                extracted_energy = field.extract_energy(energy_to_extract)
+                self.battery_history.append(extracted_energy)
+                return extracted_energy
+            
+            def idle(self):
+                self.battery_history.append(0)
+
+            def idle_or_extract(self, field: EnergyField, current_round, target_rounds, n_extractors):
+                if current_round % n_extractors == self.agent_id:
+                    self.extract(field, (target_rounds - current_round - 1))
+                else:
+                    self.idle()
+            
+            def get_battery_level(self):
+                return sum(self.battery_history)
+    \end{codebox}
+    \caption{Implementierung Klasse \texttt{ExtractorAgent}}
+    \label{snippet:02-01_extractor-agent-class}
+\end{snippet}
+
+Die Klasse \texttt{ExtractorAgent} (siehe \autoref{snippet:02-01_extractor-agent-class}) besteht aus folgenden Elementen:
+
+\begin{itemize}
+    \item \texttt{\_\_init\_\_} initialisiert die Felder des Objekts: die ID des Extraktors (\texttt{agent\_id}), die Strategie des Extraktors (\texttt{strategy}) sowie die Historie der Batteriestände (\texttt{battery\_history}).
+    \item \texttt{decide\_extraction} entscheidet auf Basis der Strategie, wie viel Energie der Extraktor in der aktuellen Runde extrahieren möchte.
+    \item \texttt{extract} stößt die Energieentnahme durch auf dem Energiefeld an und aktualisiert die Historie der Batteriestände des Extraktors.
+    \item \texttt{idle} überspringt die Extraktion in der aktuellen Runde.
+    \item \texttt{idle\_or\_extract} entscheidet, ob der Extraktor in der aktuellen Runde extrahieren oder pausieren soll. Dabei wird mit Hilfe einer Modulo-Operation auf die ID des Extraktors geprüft, ob dieser in der aktuellen Runde an der Reihe ist. Entweder wird die Extraktion angestoßen oder der Extraktor pausiert.
+    \item \texttt{get\_battery\_level} berechnet den aktuellen Batteriestand des Extraktors auf Grundlage der akkumulierten Historie der extrahierten Energie.
+\end{itemize}
+
+Die Energieextraktoren sind in der Lage, mit dem Energiefeld zu interagieren, um auf Grundlage der implementierten Strategien Energie zu extrahieren. In der vorliegenden Implementierung wird lediglich die Strategie \qit{Greedy} unterstützt, bei der stets das Maximum extrahiert wird. Das Spiel (siehe \autoref{snippet:02-01_game-logic}) führt die Extraktoren durch die vorgegebenen Runden.
+
+\begin{snippet}[htb]
+    \centering
+    \begin{codebox}{python}{Spiellogik}
+        available_strategies = [
+                # always extracts the maximum allowed energy
+                'Greedy'                
+            ]
+
+        rounds = 10
+        strategy = available_strategies[0]
+
+        energy_field = EnergyField()
+
+        extractor_agent_0 = ExtractorAgent(agent_id=0, strategy=strategy.lower())
+        extractor_agent_1 = ExtractorAgent(agent_id=1, strategy=strategy.lower())
+        extractor_agent_2 = ExtractorAgent(agent_id=2, strategy=strategy.lower())
+        extractor_agents = [extractor_agent_0, extractor_agent_1, extractor_agent_2]
+
+        for round in range(rounds - 1):
+            for agent in extractor_agents:
+                agent.idle_or_extract(energy_field, round, rounds, len(extractor_agents))
+
+        production_history = energy_field.production_history
+        energy_history = energy_field.energy_history
+        battery_history_0 = extractor_agent_0.battery_history
+        battery_history_1 = extractor_agent_1.battery_history
+        battery_history_2 = extractor_agent_2.battery_history
+        battery_history_total = sum(np.array([battery_history_0, battery_history_1, battery_history_2]))
+    \end{codebox}
+    \caption{Implementierung der Spiellogik}
+    \label{snippet:02-01_game-logic}
+\end{snippet}
+
+\section{\qit{Greedy} Strategie}
+\label{sec:02-02_greedy-strategy}
+
+\subsection{Implementierung}
+\label{sec:02-02-01_implementation}
+
+In der initialen Implementierung sollen die Extraktoren stets versuchen, das mögliche Maximum von drei Punkten zu extrahieren, sofern der Energiestand des Energiefeldes dies zulässt. Dafür wurde die Strategie \qit{Greedy} implementiert.
+
+\begin{snippet}[htb]
+    \centering
+    \begin{codebox}{python}{Implementierung und Verwendung der \qit{Greedy}-Strategie}
+        def decide_extraction(self, field: EnergyField, rounds_left=None):
+            energy_to_extract = 0
+            if self.strategy == 'greedy':
+                energy_to_extract = field.energy_decrement_max
+            else:
+                raise ValueError("Unknown strategy.")
+            return energy_to_extract
+        
+        # ...
+
+        available_strategies = [
+                # always extracts the maximum allowed energy
+                'Greedy'                
+            ]
+
+        strategy = available_strategies[0]
+    \end{codebox}
+    \caption{Implementierung und Verwendung der \qit{Greedy}-Strategie}
+    \label{snippet:02-02-01_greedy-strategy}
+\end{snippet}
+
+Dabei entspricht der Wert von \texttt{field.energy\_decrement\_max} dem maximalen Energieentnahmewert von 3 Punkten, welcher in der \texttt{EnergyField}-Klasse definiert ist.
+
+\subsection{Ergebnisse}
+\label{sec:02-02-02_results}
+
+Im Rahmen der Simulation wurde die \qit{Greedy}-Strategie für jeden Extraktor und für verschiedene Anzahlen von Runden durchgeführt. Dabei wäre das Energiefeld theoretisch in der Lage, bei $n$ Runden eine maximale Energie von $20 + n - 1$ Energiepunkten zu erzeugen, das entspricht $20 + 10 - 1 = 29$ Punkten bei 10 Runden, $20 + 20 - 1 = 39$ Punkten bei 20 Runden sowie $20 + 50 - 1 = 69$ Punkten bei 50 Runden. Der Abzug von einem Punkt resultiert aus einem Implementierungsdetail, durch welches die Regeneration nach der Extraktion stattfindet.
+
+Bei der Simulation von 10 Runden (siehe \autoref{fig:g-02_energy-game-data-greedy-10-rounds}) können alle Extraktoren tatsächlich in jeder Runde die maximal möglichen 3 Punkte extrahieren, ohne dass das Energiefeld jemals durch ein Absinken auf 0 Punkte für die Regeneration gesperrt wird. Am Ende der 10 Runden haben die Extraktoren jeweils 9 Punkte extrahiert, was einem Gesamtgewinn von 27 Punkten entspricht. Auf dem Energiefeld verbleibt genau 1 Punkt und zusätzlich wird in der letzten Runde 1 Punkt regeneriert, sodass die theoretisch möglichen 29 Punkte erreicht wurden.
+
+\image{p}{False}{\defaultImageSize}{g-02_energy-game-data-greedy-10-rounds}{Entwicklung der Energiestände bei der \qit{Greedy}-Strategie über 10 Runden}
+
+\image{p}{False}{\defaultImageSize}{g-03_energy-game-data-greedy-20-rounds}{Entwicklung der Energiestände bei der \qit{Greedy}-Strategie über 20 Runden}
+
+\image{p}{False}{\defaultImageSize}{g-04_energy-game-data-greedy-50-rounds}{Entwicklung der Energiestände bei der \qit{Greedy}-Strategie über 50 Runden}
+
+\pagebreak
+
+Anders verhält es sich bei der Simulation von 20 Runden (siehe \autoref{fig:g-03_energy-game-data-greedy-20-rounds}). Ab der 11. Runde sinkt die Energie des Energiefeldes bereits erstmalig auf 0 Punkte, wodurch die Regeneration für 3 Runden pausiert. In der \autoref{fig:g-03_energy-game-data-greedy-20-rounds} ist dies an der rot gestrichelten Linie zu erkennen, welche die produzierte Energie je Runde darstellt und für die Dauer von drei Runden auf 0 abfällt. Erst ab der dreizehnten Runde wird das Energiefeld wieder freigegeben und produziert einen weiteren Punkt. Dieser wird jedoch unmittelbar in der darauffolgenden Runde von einem Extraktor entnommen, sodass das Energiefeld erneut auf 0 Punkte sinkt und die Regeneration für weitere drei Runden pausiert. Das bedeutet effektiv, dass nur noch in jeder vierten Runde Energie konsumiert werden kann -- also in jeder zwölften Runde aus der Sicht eines einzelnen Extraktors, da diese sich reihum abwechseln. Am Ende der 20 Runden können die Extraktoren dadurch lediglich 10 Punkte extrahieren, mit Ausnahme des nullten Extraktors, welcher 11 Punkte extrahieren kann, da er in der ersten Runde an der Reihe ist. Dadurch ergibt sich ein Gesamtgewinn von 31 Punkten, was unter den theoretisch möglichen 39 Punkten liegt. Den Extraktoren entgehen also etwa zwanzig Prozent der möglichen Energie.
+
+Die Simulation von 50 Runden (siehe \autoref{fig:g-04_energy-game-data-greedy-50-rounds}) verhält sich ähnlich, allerdings fällt hier die Anzahl gesperrter Runden relativ betrachtet deutlich mehr ins Gewicht. Nach der 50. Runde hat der nullte Extraktor insgesamt 14 Punkte bezogen, für die anderen beiden Extraktoren waren jeweils 12 Punkte möglich. Verglichen mit den theoretisch möglichen 69 Punkten verlieren sie so mehr als fünfzig Prozent und extrahieren am Ende gemeinsam lediglich 31 Punkte.
+
+\section{Einordnung der Ergebnisse}
+\label{sec:02-02-03_interpretation-of-results}
+
+Insgesamt zeigt sich durch die Simulationen, dass die \qit{Greedy}-Strategie nicht sonderlich ausdauernd ist. Zwar gelingt es den Extraktoren in schnellen Spielen, ihren Ertrag kurzfristig zu maximieren, allerdings fällt das Energiefeld bei längeren Spielen ab zehn Runden häufig auf 0 Punkte, wodurch die Regeneration für mehrere Runden pausiert. Diese Übernutzung ist ein klassisches Symptom der \qit{Tragik der Allmende} \cite[S. 47]{004_KII12_distributed-artificial-intelligence-and-machine-learning}: Eine Ressource wird von mehreren Akteuren gemeinsam genutzt, wobei jeder Akteur bestrebt ist, seinen eigenen Nutzen zu maximieren. Das Ergebnis ist eine kollektive Übernutzung der Ressource, was letztendlich zu deren Erschöpfung führt.
+
+Ein wichtiges Konzept der Spieltheorie, welches in diesem Zusammenhang relevant ist, ist das \qit{Gefangenendilemma} \cite[S. 46]{004_KII12_distributed-artificial-intelligence-and-machine-learning}. Die Extraktoren haben die Möglichkeit, entweder zu defektieren (also die \qit{Greedy}-Strategie zu verfolgen und in jeder Runde das Maximum zu extrahieren) oder zu kooperieren (also eine Strategie zu verfolgen, bei der eine Übernutzung des Energiefeldes vermieden wird). Für jeden einzelnen Extraktor ist es rational, zu defektieren, da er dadurch kurzfristig einen höheren Gewinn erzielen kann -- insbesondere dann, wenn die anderen Extraktoren kooperieren. Defektieren jedoch alle Extraktoren, ist das Gesamtergebnis für alle schlechter. Das \qit{Gefangenendilemma} beschreibt also einen Konflikt zwischen individuell rationalem Handeln und kollektiv optimalem Ergebnis. Sich für ein kooperatives Verhalten zu entscheiden, stellt ein Risiko für den einzelnen Extraktor dar, da er darauf hoffen muss, dass die anderen Extraktoren nicht defektieren. Es ist also in Unkenntnis der Strategien anderer Akteure sicherer, im Zweifelsfall selbst \qit{Greedy} zu spielen, als dieses Risiko einzugehen.
+
+\section{\qit{Welfare} Strategien}
+\label{sec:02-03_welfare-strategies}
+
+Würden die Extraktoren gemeinsam eine kooperative Strategie verfolgen, gäbe es verschiedene Ausbaustufen, in denen sie ihren Geweinn maximieren könnten, ohne das Energiefeld zu übernutzen. Hier eine \nameref{tab:02-03_energy-game-strategies}:
+
+\begin{table}[H]
+    \centering
+    \begin{university-table}{width=\textwidth, colspec={l X[1,1] X[2,1] c}}
+        \textbf{Strategie} & \textbf{Beschreibung} & \textbf{Berechnung} & \textbf{Abb.} \\
+            \textbf{\qit{Greedy}} & 
+                Der Extraktor versucht stets, das Maximum von 3 Punkten zu extrahieren, sofern dies möglich ist. &
+                \texttt{energy\_to\_extract = field.energy\_decrement\_max} &
+                \ref{fig:g-04_energy-game-data-greedy-50-rounds} \\
+            \textbf{\qit{Simple \linebreak Welfare}} & 
+                Der Extraktor extrahiert nie mehr als die Hälfte der aktuell verfügbaren Energie, bis zu einem Maximum von 3 Punkten. &
+                \texttt{energy\_to\_extract = field.energy {/}{/} 2} &
+                \ref{fig:g-05_energy-game-data-welfare-simple-50-rounds} \\
+            \textbf{\qit{Smart \linebreak Welfare}} & 
+                Der Extraktor extrahiert die maximal mögliche Energie, jedoch höchstens so viel, dass das Energiefeld immer einen Stand von 1 Punkt behält, um die Regeneration nicht zu gefährden. &
+                \texttt{energy\_to\_extract = min((field.energy - 1), field.energy\_decrement\_max)} &
+                \ref{fig:g-06_energy-game-data-welfare-smart-50-rounds} \\
+            \textbf{\qit{Exhaustive \linebreak Welfare}} & 
+                Der Extraktor folgt dem gleichen Prinzip wie bei \textit{Smart Welfare}, allerdings kennt er zusätzlich die Anzahl der verbleibenden Runden. Handelt es sich um die letzte Runde, wendet er die \qit{Greedy}-Strategie an, um den Gewinn zu maximieren. &
+                \texttt{if rounds\_left <= 1: \linebreak
+                            energy\_to\_extract = \linebreak
+                            field.energy\_decrement\_max \linebreak
+                        else: \linebreak
+                            energy\_to\_extract = \linebreak
+                            min((field.energy - 1), field.energy\_decrement\_max)
+                } &
+                \ref{fig:g-07_energy-game-data-welfare-exhaustive-50-rounds} \\
+    \end{university-table}
+    \caption{Übersicht über die implementierten Strategien}
+    \label{tab:02-03_energy-game-strategies}
+\end{table}
+
+Simuliert man die Strategien aus \autoref{tab:02-03_energy-game-strategies} über jeweils 50 Runden, ergeben sich die auf Seite \pageref{fig:g-05_energy-game-data-welfare-simple-50-rounds} dargestellten Ergebnisse. Dank \textit{Simple Welfare} (siehe \autoref{fig:g-05_energy-game-data-welfare-simple-50-rounds}) erzielt der nullte Extraktor einen Gewinn von 23 Punkten, der erste Extraktor einen Gewinn von 22 Punkten und der zweite Extraktor einen Gewinn von 21 Punkten. In Summe können so 66 Punkte vom Energiefeld bezogen werden. \textit{Smart Welfare} (siehe \autoref{fig:g-06_energy-game-data-welfare-smart-50-rounds}) verbessert das Ergebnis eines Extraktors um 1 Punkt, entsprechend auch das Gesamtergebnis. Noch weiter optimiert \textit{Exhaustive Welfare} (siehe \autoref{fig:g-07_energy-game-data-welfare-exhaustive-50-rounds}), da hier der letzte Extraktor in der letzten Runde die \qit{Greedy}-Strategie anwendet, was zu einem Gesamtertrag von 68 Punkten und somit einer Effizienz von fast 100 Prozent führt. Je nach Strategie verbleiben so entweder 2 Punkte, 1 Punkt oder 0 Punkte ungenutzt im Energiefeld, was eine erhebliche Verbesserung gegenüber der \qit{Greedy}-Strategie darstellt und sowohl kollektiv als auch individuell zu besseren Ergebnissen führt.
+
+\image{p}{False}{\defaultImageSize}{g-05_energy-game-data-welfare-simple-50-rounds}{Entwicklung der Energiestände bei der \qit{Simple Welfare}-Strategie über 50 Runden}
+
+\image{p}{False}{\defaultImageSize}{g-06_energy-game-data-welfare-smart-50-rounds}{Entwicklung der Energiestände bei der \qit{Smart Welfare}-Strategie über 50 Runden}
+
+\image{p}{False}{\defaultImageSize}{g-07_energy-game-data-welfare-exhaustive-50-rounds}{Entwicklung der Energiestände bei der \qit{Exhaustive Welfare}-Strategie über 50 Runden}
+
+Insgesamt zeigt sich sofort anhand der Regenerationskurve, dass in allen Fällen keine einzige Runde existiert, in der das Energiefeld auf 0 Punkte sinkt, wodurch das Energiefeld selbst immer sein theoretisches Potential ausschöpft. In jeder Simulation stehen den Akteuren also stets 69 Punkte zur Verfügung. Einfluss auf den kollektiven Ertrag der Extraktoren hat somit nur noch die Strategie der Extraktoren selbst.
+
+\begin{itemize}
+    \item Bei \qit{Simple Welfare} (siehe \autoref{fig:g-05_energy-game-data-welfare-simple-50-rounds}) wird ab Unterschreitung der kritischen Schwelle von 4 Punkten die Extraktion auf die Hälfte der verfügbaren Energie, also maximal 2 Punkte, begrenzt. Da dies über alle Runden hinweg gilt, verbleiben am Ende 2 Punkte ungenutzt im Energiefeld.
+    \item \qit{Smart Welfare} (siehe \autoref{fig:g-06_energy-game-data-welfare-smart-50-rounds}) verbessert diese Strategie, indem nicht bloß einfach die Hälfte der verfügbaren Energie extrahiert wird, sondern darauf geachtet wird, dass mindestens 1 Punkt im Energiefeld existiert. Dadurch verbleibt am Ende statt 2 Punkten nur 1 Punkt im Energiefeld.
+    \item Perfektioniert wird das kollektive Ergebnis durch \qit{Exhaustive Welfare} (siehe \autoref{fig:g-07_energy-game-data-welfare-exhaustive-50-rounds}). Die Akteure erkennen, dass es sich um die letzte Runde handelt und konsumieren in dieser auch den letzten übrigen Punkt. Zwar ist dieses Verhalten theoretisch \qit{Greedy}, schadet in diesem Fall jedoch keinem anderen Akteur, sondern trägt im Gegenteil zu einem besseren Gesamtergebnis aller Akteure bei.
+\end{itemize}
+
+Die erweiterte Implementierung der Strategien aus \autoref{tab:02-03_energy-game-strategies} in das bestehende Energiespiel ist in \autoref{snippet:02-03_welfare-strategies-implementation} und \autoref{snippet:02-03_welfare-strategies-usage} dokumentiert.
+
+\begin{snippet}[htb]
+    \centering
+    \begin{codebox}{python}{Implementierung der \qit{Welfare}-Strategien}
+        def decide_extraction(self, field: EnergyField, rounds_left=None):
+            energy_to_extract = 0
+            if self.strategy == 'greedy':
+                energy_to_extract = field.energy_decrement_max
+            elif self.strategy == 'simple welfare':
+                energy_to_extract = field.energy // 2
+            elif self.strategy == 'smart welfare':
+                energy_to_extract = min((field.energy - 1), field.energy_decrement_max)
+            elif self.strategy == 'exhaustive welfare':
+                if rounds_left <= 1:
+                    energy_to_extract = field.energy_decrement_max
+                else:
+                    energy_to_extract = min((field.energy - 1), field.energy_decrement_max)
+            else:
+                raise ValueError("Unknown strategy.")
+            return energy_to_extract
+    \end{codebox}
+    \caption{Implementierung der \qit{Welfare}-Strategien}
+    \label{snippet:02-03_welfare-strategies-implementation}
+\end{snippet}
+
+\begin{snippet}[htb]
+    \centering
+    \begin{codebox}{python}{Verwendung der \qit{Welfare}-Strategien}
+        available_strategies = [
+            # always extracts the maximum allowed energy
+            'Greedy',               
+            # extracts half of the available energy, up to the maximum allowed
+            'Simple Welfare',       
+            # extracts all but one unit of energy, up to the maximum allowed
+            'Smart Welfare',        
+            # like Smart Welfare, but acts greedily in the last round
+            'Exhaustive Welfare'    
+        ]
+    \end{codebox}
+    \caption{Verwendung der \qit{Welfare}-Strategien}
+    \label{snippet:02-03_welfare-strategies-usage}
+\end{snippet}
+
+\autoref{fig:g-01_energy-game-flow-diagram} visualisiert die Logik hinter den entwickelten Strategien als Flussdiagramm und zeigt dadurch auch, dass die Strategien sich teilweise untereinander kombinieren oder erweitern.
+
+Ordnet man die erhobenen Ergebnisse in die Theorie ein und geht man davon aus, dass alle Akteure derselben Gruppe angehören, so wird die Summe ihres Ertrags als \qit{soziale Wohlfahrt} \cite[S. 42]{004_KII12_distributed-artificial-intelligence-and-machine-learning} bezeichnet. Interessant wird es, wenn die einzelnen Extraktoren nicht die gleiche Strategie verfolgen, sondern potentiell verschieden aus den verfügbaren Strategien wählen. Kombinatorisch ergeben sich dabei $4^3 = 64$ mögliche Simulationen. Diese lassen sich nicht mehr nur anhand ihrer \qit{sozialen Wohlfahrt} unterscheiden, sondern auch hinsichtlich ihrer \qit{Pareto-Effizienz} \cite[S. 42]{004_KII12_distributed-artificial-intelligence-and-machine-learning}. Eine Simulation ist dann \qit{Pareto-effizient}, wenn es keine andere Simulation gibt, in der mindestens ein Akteur mehr gewinnt, ohne einen anderen zu beeinträchtigen.
+
+\begin{table}[H]
+    \centering
+    \begin{university-table}{width=\textwidth, colspec={c X[1,l] c c c c c c}}
+        \textbf{} &
+            \textbf{Strategien \linebreak (0, 1, 2)} & 
+            \textbf{Soziale \linebreak Wohlfahrt} & 
+            \textbf{Agent \linebreak 0} & \textbf{Agent \linebreak 1} & \textbf{Agent \linebreak 2} & 
+            \textbf{Finales \linebreak Feld} & 
+            \textbf{PE?} \\
+        \textbf{A} &
+            0: 'Exhaustive Welfare', \linebreak 1: 'Exhaustive Welfare', \linebreak 2: 'Exhaustive Welfare' & 
+            \textbf{68} & 24 & 22 & 22 & 01 &
+            \checkmark \\
+        \textbf{B} &
+            0: 'Simple Welfare', \linebreak 1: 'Greedy', \linebreak 2: 'Simple Welfare' & 
+            \textbf{48} & 16 & 24 & 08 & 01 &
+            \checkmark \\
+        \textbf{C} &
+            0: 'Simple Welfare', \linebreak 1: 'Simple Welfare', \linebreak 2: 'Smart Welfare' & 
+            \textbf{67} & 23 & 22 & 22 & 02 &
+            \crossmark \\
+    \end{university-table}
+    \caption{Analyse verschiedener Strategiekombinationen auf \qit{Pareto-Effizienz}}
+    \label{tab:02-03_pareto-efficiency-analysis}
+\end{table}
+
+\textbf{Kombination A} ist offensichtlich \qit{Pareto-effizient}, da schlichtweg keine optimalere Kombination existiert. Spannend ist vielmehr \textbf{Kombination B}, bei welcher man intuitiv erwarten könnte, dass die \qit{Greedy}-Strategie des ersten Agenten die anderen beeinflusst. Zwar ist dies indirekt der Fall, allerdings fragt \qit{Pareto-Effizienz} nicht nach der \qit{Fairness} einer Simulation, sondern vielmehr nach der Existenz einer dominanten Simulation verglichen mit der aktuellen, in welcher kein Agent schlechter, aber mindestens einer besser gestellt wäre. Dieses Szenario tritt nämlich in \textbf{Kombination C} auf, welche beispielsweise durch die \textbf{Kombination A} wird.
+
+\image{H}{False}{1.0}{g-01_energy-game-flow-diagram}{Logischer Ablauf der Strategien im Energiespiel}
+
+Bei erweiterten Strategien könnten Extraktoren versuchen, aufgrund der Historie des Energiefeldes Rückschlüsse auf die Strategien der anderen zu ziehen, um so ihre eigene anzupassen. Auch wäre es möglich, die Simulation über mehrere Spiele hinweg durchzuführen und ein kooperatives Verhalten in Folgespielen zu erzwingen, indem auf defektives Verhalten anderer reagiert und zu einer \qit{Greedy}-Strategie gewechselt wird. Das Ziel wären nutzenbasierte Agenten, die auf ein \qit{Pareto-effizientes} und wohlfahrtsoptimierendes Ergebnis ausgerichtet sind.
