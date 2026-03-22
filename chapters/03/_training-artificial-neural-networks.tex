@@ -53,4 +53,372 @@
     \universityPoints{30}
 \end{universityTask}
 
-Dieser Text enthält die Lösung der obigen Aufgabenstellung.
+\section{Grundlagen der \textit{XOR}-Funktion}
+\label{sec:03-01_basics-of-xor-function}
+
+Ein \Gls{ea} zur Optimierung der Gewichtsmatrizen eines \Gls{ann}, mit dem Ziel, die \textit{XOR}-Funktion zu approximieren, soll im Rahmen dieser Aufgabenstellung implementiert werden. Bei der \textit{XOR}-Funktion handelt es sich um eine logische Funktion, deren Ausgabewert \texttt{0} oder \texttt{1} sein kann, abhängig von den Eingabewerten. Es gilt $A \oplus B = 1$ nur dann, wenn genau einer der beiden Eingabewerte \texttt{1} ist, andernfalls ist die Ausgabe \texttt{0}. \autoref{tab:03-01_xor-function-table} zeigt die \nameref{tab:03-01_xor-function-table}.
+
+\begin{table}[H]
+    \centering
+    \begin{university-table}{width=0.45\textwidth, colspec={c c c}}
+        \textbf{$X_1$} & \textbf{$X_2$} & \textbf{$Y$} \\
+            \texttt{0} & \texttt{0} & \textbf{\texttt{0}} \\
+            \texttt{0} & \texttt{1} & \textbf{\texttt{1}} \\
+            \texttt{1} & \texttt{0} & \textbf{\texttt{1}} \\
+            \texttt{1} & \texttt{1} & \textbf{\texttt{0}} \\
+    \end{university-table}
+    \caption{Wahrheitstabelle der \textit{XOR}-Funktion}
+    \label{tab:03-01_xor-function-table}
+\end{table}
+
+\section{Approximation der \textit{XOR}-Funktion mit einem \acrshort{ann}}
+\label{sec:03-02_approximating-xor-function-with-ann}
+
+Eine besondere Herausforderung bei der Approximation der \textit{XOR}-Funktion besteht darin, dass sie, anders als beispielsweise die \textit{AND}- oder die \textit{OR}-Funktion, nicht linear separierbar ist \cite[S. 38]{002_KII04A_artificial-neural-nets}. Das bedeutet, dass keine lineare Trennlinie existiert, die die Eingabepunkte korrekt klassifizieren kann. Daher ist es notwendig, zur Annäherung der \textit{XOR}-Funktion ein \Gls{ann} mit mindestens einer verdeckten Schicht zu verwenden, um die nicht-lineare Trennbarkeit zu überwinden.
+
+\subsection{Gewichte und Genom des \acrshort{ann}}
+\label{sec:03-02-01_weights-and-genome-of-ann}
+
+Das Ziel dieser Aufgabe ist es, die Gewichtsmatrizen eines \Gls{ann} mithilfe eines \Gls{ea} so zu optimieren, dass das \Gls{ann} die \textit{XOR}-Funktion erfolgreich approximieren kann. Verwendet werden soll ein sogenanntes \Gls{mlp}, ein vorwärtsgekoppeltes neuronales Netz \cite[S. 39 ff.]{002_KII04A_artificial-neural-nets}. Es besteht aus einer Eingabeschicht mit zwei Neuronen, einer verdeckten Schicht mit drei Neuronen und einer Ausgabeschicht mit einem Neuron. Die Gewichtsmatrizen $\mathbf{W}^{(1)}$ und $\mathbf{W}^{(2)}$ repräsentieren die Verbindungsgewichte zwischen den Schichten des \Gls{ann}. Dabei gilt $\mathbf{W}^{(1)} \in \mathbb{R}^{2 \times 3}$ für die Verbindungen von der Eingabeschicht zur verdeckten Schicht und $\mathbf{W}^{(2)} \in \mathbb{R}^{3 \times 1}$ für die Verbindungen von der verdeckten Schicht zur Ausgabeschicht, wie \autoref{eq:03-02-01_weight-vectors} zeigt.
+
+\begin{equation}
+    \begin{aligned}
+        \mathbf{W}^{(1)} &=
+        \begin{pmatrix}
+            w_{1,1}^{(1)} & w_{1,2}^{(1)} & w_{1,3}^{(1)} \\
+            w_{2,1}^{(1)} & w_{2,2}^{(1)} & w_{2,3}^{(1)}
+        \end{pmatrix}, \quad
+        \mathbf{W}^{(2)} =
+        \begin{pmatrix}
+            w_{1,1}^{(2)} \\
+            w_{2,1}^{(2)} \\
+            w_{3,1}^{(2)}
+        \end{pmatrix}
+    \end{aligned}
+    \label{eq:03-02-01_weight-vectors}
+\end{equation}
+
+Als Genom $\mathbf{G}$ eines Individuums im \Gls{ann} ist die Konkatenation der Gewichtsmatrizen $\mathbf{W}^{(1)}$ und $\mathbf{W}^{(2)}$ definiert. Das Genom eines Individuums ist somit ein Vektor aller Gewichte des \Gls{ann}, der die gesamte Konfiguration des Netzes repräsentiert. Entsprechend gilt hier $\mathbf{G} \in \mathbb{R}^{(2 \times 3) + (3 \times 1)} = \mathbb{R}^{9}$.
+
+\begin{equation}
+    \begin{aligned}
+        \mathbf{G} &=
+        \begin{pmatrix}
+            \mathrm{vec}\!\left(\mathbf{W}^{(1)}\right) \\
+            \mathrm{vec}\!\left(\mathbf{W}^{(2)}\right)
+        \end{pmatrix}
+        =
+        \begin{pmatrix}
+            w_{1,1}^{(1)} &
+            w_{1,2}^{(1)} &
+            w_{1,3}^{(1)} &
+            w_{2,1}^{(1)} &
+            w_{2,2}^{(1)} &
+            w_{2,3}^{(1)} &
+            w_{1,1}^{(2)} &
+            w_{2,1}^{(2)} &
+            w_{3,1}^{(2)}
+        \end{pmatrix}^{\top}, \\
+        &\text{mit} \text{ } \mathrm{vec}: \mathbb{R}^{m \times n} \rightarrow \mathbb{R}^{mn}
+    \end{aligned}
+    \label{eq:03-02-01_genome-vector}
+\end{equation}
+
+\subsection{Aktivierungsfunktionen und Übergänge zwischen den Schichten}
+\label{sec:03-02-02_activation-functions-and-transitions-between-layers}
+
+Damit Eingabewerte durch das \Gls{ann} zu Ausgabewerten verarbeitet werden können, müssen Übergänge zwischen den Schichten definiert werden. Diese Übergänge lassen sich mittels einer Aktivierungsfunktion $f$ und der Gewichtsmatrizen $\mathbf{W}^{(1)}$ und $\mathbf{W}^{(2)}$ ausdrücken. Abhängig von der Art des zu lösenden Problems existieren verschiedene Aktivierungsfunktionen \cite[S. 14]{001_KII00_accompanying-booklet-for-KIIBU}:
+
+\begin{itemize}
+    \item Die \textbf{Stufenfunktion} gibt \texttt{1} zurück, wenn die gewichtete Summe der Eingaben einen bestimmten Schwellwert überschreitet, andernfalls \texttt{0}.
+    \item Bei der \textbf{Sigmoidfunktion} handelt es sich um eine glatte, S-förmige Funktion, die Werte zwischen \texttt{0} und \texttt{1} zurückgibt. Dabei steigt sie zunächs langsam, dann schneller und schließlich wieder langsamer an, wenn die gewichtete Summe der Eingaben zunimmt. Es handelt sich um eine kontinuierlich differenzierbare Funktion.
+    \item Durch eine \textbf{lineare Funktion} werden die gewichteten Eingaben identisch an die nächste Schicht weitergegeben.
+    \item Handelt es sich um eine \textbf{semilineare Funktion}, so beginnt und endet die Linearität erst mit dem Über- beziehungsweise Unterschreiten bestimmter Schwellwerte.
+\end{itemize}
+
+Für das \textit{XOR}-Problem ist die Sigmoidfunktion eine geeignete Wahl, da sie die nicht-lineare Trennbarkeit der Funktion überwinden kann. Ihre Ausgabewerte lassen sich besonders gut als Wahrscheinlichkeiten interpretieren, was die Optimierung der Gewichte durch den \Gls{ea} erleichtert.
+
+\begin{equation}
+    \sigma(x) = \frac{1}{1 + e^{-x}}
+    \label{eq:03-02-02_sigmoid-function}
+\end{equation}
+
+\autoref{eq:03-02-02_sigmoid-function} zeigt die mathematische Definition der Sigmoidfunktion, wobei $x$ die gewichtete Summe der Eingaben ist. Die Funktion transformiert diese Summe in einen Wert zwischen \texttt{0} und \texttt{1}, wodurch die Ausgabe als Wahrscheinlichkeit interpretiert werden kann, dass die Eingaben zu einer bestimmten Klasse gehören. Im Fall der \textit{XOR}-Funktion sind die Klassen binär, sodass die Ausgabe des \Gls{ann} als Wahrscheinlichkeit für die Klassen \texttt{0} oder \texttt{1} interpretiert werden kann.
+
+\begin{equation}
+    \begin{aligned}
+        \mathbf{Z} &= \sigma\!\left(\mathbf{X} \cdot \mathbf{W}^{(1)}\right), \\
+        \hat{\mathbf{Y}} &= \sigma\!\left(\mathbf{Z} \cdot \mathbf{W}^{(2)}\right)
+    \end{aligned}
+    \label{eq:03-02-02_ann-output-calculation}
+\end{equation}
+
+Im gegebenen \Gls{ann} mit einer verdeckten Schicht erfolgt die Berechnung der Ausgabewerte in zwei Schritten. Zunächst werden die Eingabewerte mit den Gewichten der ersten Schicht $\mathbf{W}^{(1)}$ multipliziert und durch die Aktivierungsfunktion $\sigma$ transformiert, um die Ausgaben der verdeckten Schicht zu erhalten. Anschließend werden diese Ausgaben mit den Gewichten der zweiten Schicht $\mathbf{W}^{(2)}$ multipliziert und erneut durch die Aktivierungsfunktion transformiert, um die endgültige Ausgabe des \Gls{ann} zu berechnen. \autoref{eq:03-02-02_ann-output-calculation} zeigt diesen Prozess formal.
+
+\begin{snippet}[htb]
+    \centering
+    \begin{codebox}{python}{Klasse \texttt{ANN}}
+        class ANN:
+            def __init__(self, W1=None, W2=None):
+                self.W1 = np.random.rand(2, 3) if W1 is None else W1
+                self.W2 = np.random.rand(3, 1) if W2 is None else W2
+
+            @staticmethod
+            def sigmoid(x):
+                return 1 / (1 + np.exp(-x))
+            
+            def forward(self, x):
+                z = self.sigmoid(np.dot(x, self.W1))    # output of layer 1
+                y = self.sigmoid(np.dot(z, self.W2))    # output of layer 2
+                return y
+    \end{codebox}
+    \caption{Implementierung der Klasse \texttt{ANN}}
+    \label{snippet:03-02-02_ann-class}
+\end{snippet}
+
+\autoref{snippet:03-02-02_ann-class} zeigt die für die Umsetzung des \Gls{ann} gewählte Implementierung in \textit{Python}.
+
+\subsection{Fitness-Funktion für Bewertung der Individuen}
+\label{sec:03-02-03_fitness-function-for-evaluation-of-individuals}
+
+Während des Trainingsprozesses eines \Gls{ea} ist es notwendig, die Fitness der Individuen zu bewerten, um jene zu selektieren, deren Eignung für die Approximation der Lösung am höchsten sind. Seien analog zur \nameref{tab:03-01_xor-function-table} das Problem $\mathbf{X}$ als Ausgangswerte und die Lösung $\mathbf{Y}$ als Zielwerte gegeben, ergeben sich die folgenden Vektoren als Grundlage für die Berechnung der Fitness:
+
+\begin{equation}
+    \begin{aligned}
+        \mathbf{X} &=
+        \begin{pmatrix}
+            0 & 0 \\
+            0 & 1 \\
+            1 & 0 \\
+            1 & 1
+        \end{pmatrix}, \quad
+        \mathbf{Y} =
+        \begin{pmatrix}
+            0 \\
+            1 \\
+            1 \\
+            0
+        \end{pmatrix}
+    \end{aligned}
+    \label{eq:03-02-03_input-output-vectors}
+\end{equation}
+
+Zur Bewertung der Fitness eines Individuums kann der \Gls{mse} als Maß für die Abweichung der Ausgabe $\hat{\mathbf{Y}}$ des \Gls{ann} von den Zielwerten $\mathbf{Y}$ der \textit{XOR}-Funktion verwendet werden. Der \Gls{mse} berechnet sich als Durchschnitt der quadrierten Differenzen zwischen den erhaltenen und den erwarteten Ausgabewerten für $n$ Datenpunkte.
+
+\begin{equation}
+    \mathrm{MSE} = \frac{1}{n} \sum_{i=1}^{n} (\hat{\mathbf{Y}}_i - \mathbf{Y}_i)^2
+    \label{eq:03-02-03_mse-fitness-function}
+\end{equation}
+
+Damit die Fitness eines Individuums mit der Qualität der Approximation positiv korreliert, ist die Fitness-Funktion $f$ definiert als
+
+\begin{equation}
+    f(MSE) = \frac{1}{1 + \mathrm{MSE}}
+    \label{eq:03-02-03_fitness-function}
+\end{equation}
+
+Generell wird erwartet, dass über die Evolution der Individuen deren \Gls{mse} abnimmt, was zu einer Verbesserung der Fitness führt. Das Ziel des \Gls{ea} ist es, die Gewichtsmatrizen so zu optimieren, dass die Ausgabe des \Gls{ann} die \textit{XOR}-Funktion möglichst genau approximiert, sodass die Fitness auf annähernd \texttt{1} ansteigt.
+
+\begin{snippet}[htb]
+    \centering
+    \begin{codebox}{python}{Funktion \texttt{fitness}}
+        def fitness(ann, targets=XOR_TARGETS, outputs_ptr=None):
+            '''Evaluate the fitness of an ANN based on its performance on the XOR problem.'''
+            outputs = ann.forward(XOR_INPUTS)
+            if outputs_ptr is not None:
+                outputs_ptr.append(outputs)
+            
+            error = np.mean((outputs - targets) ** 2)
+            fitness = 1 / (1 + error)
+            return fitness
+    \end{codebox}
+    \caption{Implementierung der Funktion \texttt{fitness()}}
+    \label{snippet:03-02-03_fitness-function}
+\end{snippet}
+
+Die Implementierung der Fitness-Funktion in \autoref{snippet:03-02-03_fitness-function} nimmt ein \Gls{ann} sowie die Zielwerte entgegen und führt die Vorwärtsberechnung zur Annäherung der Ausgabe durch. Die Ergebnisse werden entsprechend der Definition des \Gls{mse} ermittelt und können optional für die spätere Analyse in einem übergebenen Zeiger gespeichert werden.
+
+\section{\acrlong{ea} zum Training des \acrshort{ann}}
+\label{sec:03-03_ea-for-training-ann}
+
+Für das Training des \Gls{ann} mittels eines \Gls{ea} sind verschiedene Schritte notwendig. Zunächst wird ein Pool von Individuen generiert (\texttt{create\_population()}, siehe \autoref{snippet:03-03_create-population-function}), wobei jedes Individuum eine Instanz des \Gls{ann} mit zufälligen Gewichten ist. In jeder Generation werden dann die Individuen anhand ihrer Fitness (\texttt{fitness()}, siehe \autoref{snippet:03-02-03_fitness-function}) bewertet und sortiert. Das beste Individuum wird mit einem zufällig ausgewählten anderen Individuum überkreuzt (\texttt{crossover()}, siehe \autoref{snippet:03-03_crossover-function}) und anschließend mutiert (\texttt{mutate()}, siehe \autoref{snippet:03-03_mutate-function}). Dieser Prozess wird über eine vorgegebene Anzahl von Generationen wiederholt (\texttt{train\_ea()}, siehe \autoref{snippet:03-03_train-ea-function}), um die Gewichte des \Gls{ann} schrittweise zu optimieren und die Approximation der \textit{XOR}-Funktion zu verbessern.
+
+\begin{snippet}[h]
+    \centering
+    \begin{codebox}{python}{Skript für das Training}
+        XOR_INPUTS = np.vstack(([0, 0], [0, 1], [1, 0], [1, 1]))
+        XOR_TARGETS = np.array([0, 1, 1, 0]).reshape(-1, 1)
+
+        # total number of generations to evolve
+        GENERATIONS = 100               
+        # generations marked in the plot's x-axis
+        MILESTONES = [10, 20, 50, 100]  
+        # number of candidates (ANN instances) in each generation
+        POPULATION_SIZE = 50            
+        # probability of mutating a child genome after crossover
+        MUTATION_RATE = 0.1             
+        # magnitude of the mutation
+        MUTATION_STRENGTH = 0.5         
+    \end{codebox}
+    \caption{Parameter zur Konfiguration des \acrshort{ea}}
+    \label{snippet:03-03_parameters-for-ea}
+\end{snippet}
+
+\autoref{snippet:03-03_parameters-for-ea} ist ein Auszug der für das Training des \Gls{ann} mittels eines \Gls{ea} relevanten Parameter. Besonders viel Einfluss auf das Trainingsergebnis haben dabei
+
+\begin{itemize}
+    \item die Anzahl der Generationen, die trainiert werden sollen (\texttt{GENERATIONS}),
+    \item die Anzahl der generierten und bewerteten Individuen pro Generation (\texttt{POPULATION\_SIZE}),
+    \item die Wahrscheinlichkeit, mit der nach der Kreuzung mutiert wird (\texttt{MUTATION\_RATE}), und
+    \item die Stärke der Mutation, also die relative Größe der zufälligen Veränderung der Gewichte bei Mutation eines Kindes (\texttt{MUTATION\_STRENGTH}).
+\end{itemize}
+
+Außerdem werden die Eingabewerte \texttt{XOR\_INPUTS} und die Zielwerte \texttt{XOR\_TARGETS} entsprechend der \textit{XOR}-Funktion wie in \autoref{eq:03-02-03_input-output-vectors} definiert und in Konstanten gespeichert.
+
+\begin{snippet}[h]
+    \centering
+    \begin{codebox}{python}{Funktion \texttt{create\_population()}}
+        def create_population():
+            '''Generate a population of ANN instances with random weights to prepare for the evolutionary process.'''
+            return [ANN() for _ in range(POPULATION_SIZE)]
+    \end{codebox}
+    \caption{Implementierung der Funktion \texttt{create\_population()}}
+    \label{snippet:03-03_create-population-function}
+\end{snippet}
+
+Für die Individuen der ersten Generation wird aus dem \Gls{ann} initial eine Population in der Größe von \texttt{POPULATION\_SIZE} generiert. Die Genome der Individuen werden dabei zufällig initialisiert.
+
+\begin{snippet}[h]
+    \centering
+    \begin{codebox}{python}{Funktion \texttt{crossover()}}
+        def crossover(parent1, parent2):
+            '''Create a child ANN by combining the weights of two parent ANNs to produce offspring with traits from both parents.'''
+            child = ANN()
+
+            mask1 = np.random.rand(*parent1.W1.shape) > 0.5
+            mask2 = np.random.rand(*parent1.W2.shape) > 0.5
+
+            child.W1 = np.where(mask1, parent1.W1, parent2.W1)
+            child.W2 = np.where(mask2, parent1.W2, parent2.W2)
+
+            return child
+    \end{codebox}
+    \caption{Implementierung der Funktion \texttt{crossover()}}
+    \label{snippet:03-03_crossover-function}
+\end{snippet}
+
+Um in der nächsten Generation neue Individuen zu generieren, werden durch Kreuzung die Genome von zwei Elternteilen der vorherigen Generation kombiniert. Dabei wird für jedes Gewicht zufällig entschieden, ob es vom ersten oder vom zweiten Elternteil übernommen wird. Das entstandene Individuum erhält somit eine Mischung der Eigenschaften beider Elternteile.
+
+\begin{snippet}[h]
+    \centering
+    \begin{codebox}{python}{Funktion \texttt{mutate()}}
+        def mutate(ann):
+            '''Mutate an ANN's with the probability defined by MUTATION_RATE to introduce variation in the population.'''
+            if np.random.rand() < MUTATION_RATE:
+                ann.W1 += np.random.randn(*ann.W1.shape) * MUTATION_STRENGTH
+                ann.W2 += np.random.randn(*ann.W2.shape) * MUTATION_STRENGTH
+    \end{codebox}
+    \caption{Implementierung der Funktion \texttt{mutate()}}
+    \label{snippet:03-03_mutate-function}
+\end{snippet}
+
+Um zusätzlich zur Kreuzung weitere Variation in die Population zu bringen, wird jedes neu generierte Individuum mit einer vor dem Training von \texttt{MUTATION\_RATE} festgelegten Wahrscheinlichkeit mutiert. Dabei werden die zufällig von der Kreuzung übernommenen Gewichte um einen kleinen zufälligen Wert verändert, dessen Größe durch \texttt{MUTATION\_STRENGTH} bestimmt wird.
+
+\begin{snippet}[htp]
+    \centering
+    \begin{codebox}{python}{Funktion \texttt{train\_ea()}}
+        def train_ea(generations):
+            '''Train the ANN using an Evolutionary Algorithm (EA) over a specified number of generations to evolve the population.'''
+            population = create_population()
+            fitness_history = []
+            outputs_history = []
+
+            for g in range(generations):
+                population = sorted(
+                    population,
+                    key=lambda x: fitness(x),
+                    reverse=True
+                )
+
+                best = population[0]
+                best_output = []
+                fitness_history.append(fitness(best, outputs_ptr=best_output))
+                outputs_history.append(best_output[0])
+                new_population = [best]
+
+                while len(new_population) < POPULATION_SIZE:
+                    parent1 = best
+                    parent2 = population[np.random.randint(POPULATION_SIZE)]
+
+                    child = crossover(parent1, parent2)
+                    mutate(child)
+
+                    new_population.append(child)
+
+                population = new_population
+
+            population = sorted(
+                population,
+                key=lambda x: fitness(x),
+                reverse=True
+            )
+
+            return population[0], fitness_history, outputs_history
+    \end{codebox}
+    \caption{Implementierung der Funktion \texttt{train\_ea()}}
+    \label{snippet:03-03_train-ea-function}
+\end{snippet}
+
+\begin{snippet}[htp]
+    \centering
+    \begin{codebox}{python}{Skript für das Training}
+        trained_ann, FITNESS_HISTORY, OUTPUTS_HISTORY = train_ea(GENERATIONS)
+    \end{codebox}
+    \caption{Aufruf der Funktion \texttt{train\_ea()}}
+    \label{snippet:03-03_call-of-train-ea-function}
+\end{snippet}
+
+Wird wie in \autoref{snippet:03-03_call-of-train-ea-function} die Funktion \texttt{train\_ea()} mit der gewünschten Anzahl von Generationen, also der Anzahl an Evolutionsschritten für das Training, aufgerufen, werden die zuvor aufgeführten Teilfunktionen des \Gls{ea} ausgeführt. \autoref{snippet:03-03_train-ea-function} zeigt die vollständige \nameref{snippet:03-03_train-ea-function} für das Training des \Gls{ann} mittels eines \Gls{ea}.
+
+Für jede Generation, beginnend mit der zufällig generierten ersten Generation, werden die Individuen anhand ihrer Fitness bewertet und sortiert, wobei der beste Kandidat für die nächste Generation ausgewählt wird. Anschließend werden $\texttt{POPULATION\_SIZE} - 1$ neue Individuen durch Kreuzung des besten Kandidaten mit zufällig ausgewählten anderen Individuen der aktuellen Generation generiert. Jedes $\frac{1}{\texttt{MUTATION\_RATE}}$-te Individuum wird zusätzlich mutiert. Nach Durchlaufen aller Generationen wird aus der finalen Population das beste Individuum zurückgegeben, zusammen mit der Historie der Fitnesswerte und der Ausgaben der besten Individuen jeder Generation, um die Entwicklung des Trainingsprozesses analysieren zu können.
+
+\section{Ergebnisse des Trainings}
+\label{sec:03-04_results-of-training}
+
+Auf Grundlage der in \autoref{sec:03-03_ea-for-training-ann} beschriebenen \nameref{snippet:03-03_train-ea-function} wurden $100$ Generationen mit dem \textit{XOR}-Problem trainiert. Dabei wurden Daten über die Fitness der besten Individuen jeder Generation sowie deren Ausgaben gesammelt, um die Entwicklung des Trainingsprozesses zu analysieren. Besonders die Generationen $10$, $20$, $50$ und $100$ wurden miteinander verglichen, um die Fortschritte bei der Approximation der \textit{XOR}-Funktion durch das \Gls{ann} zu bewerten. \autoref{tab:03-04_results-table} und \autoref{fig:g-08_artificial-neural-networks-100-generations} zeigen die Ergebnisse des Trainingsprozesses.
+
+\begin{table}[H]
+    \centering
+    \begin{university-table}{
+        width=0.90\textwidth,
+        colspec={c c c c c c c},
+        cell{6}{1}={c=3}{l}
+    }
+        \textbf{$X_1$} & \textbf{$X_2$} & \textbf{$Y$} & 
+        \textbf{$\hat{Y}(n=10)$} & \textbf{$\hat{Y}(n=20)$} & \textbf{$\hat{Y}(n=50)$} & \textbf{$\hat{Y}(n=100)$} \\
+            \texttt{0} & \texttt{0} & \textbf{\texttt{0}} & \texttt{0.500174} & \texttt{0.446617} & \texttt{0.298728} & \texttt{0.071644} \\
+            \texttt{0} & \texttt{1} & \textbf{\texttt{1}} & \texttt{0.531663} & \texttt{0.619961} & \texttt{0.637301} & \texttt{0.953985} \\
+            \texttt{1} & \texttt{0} & \textbf{\texttt{1}} & \texttt{0.515509} & \texttt{0.521203} & \texttt{0.757751} & \texttt{0.960017} \\
+            \texttt{1} & \texttt{1} & \textbf{\texttt{0}} & \texttt{0.526516} & \texttt{0.542938} & \texttt{0.229892} & \texttt{0.008607} \\
+        \textbf{Fitness} & & &
+            \textbf{80.30 \%} & \textbf{82.17 \%} & \textbf{92.33 \%} & \textbf{99.78 \%} \\
+    \end{university-table}
+    \caption{Ergebnistabelle der Ausgaben des besten Individuums nach $n$ Generationen}
+    \label{tab:03-04_results-table}
+\end{table}
+
+Die ersten Generationen weisen eine Fitness von deutlich unter $90 \%$ auf. In der Generation $n = 10$ wäre es nicht einmal möglich, durch Definition der Grenze $0.5$ die Ausgabe des \Gls{ann} korrekt in die Klassen \texttt{0} und \texttt{1} einzusortieren, weil dazu die approximierten Werte für die Eingaben \texttt{(0, 0)} und \texttt{(1, 1)} unter $0.5$ liegen müssten. Bei $n = 20$ ist die Fitness zwar höher, aber auch hier ist eine korrekte Klassifikation der Ausgaben noch nicht möglich, da der Wert für die Eingabe \texttt{(1, 1)} noch über $0.5$ liegt, auch wenn \texttt{(0, 0)} zufällig korrekt eingeordnet werden könnte. Erst ab $n = 50$ ist die Fitness mit über $90 \%$ so hoch, dass die Ausgaben des \Gls{ann} für alle Eingangskombinationen zum korrekten Zielwert tendieren. In der Generation $n = 100$ ist die Fitness mit fast $100 \%$ schließlich so hoch, dass durch Auf- beziehungsweise Abrunden der ersten Nachkommastelle die Ausgaben des \Gls{ann} den Zielwerten der \textit{XOR}-Funktion korrekt zugeordnet werden könnten.
+
+\pagebreak
+
+\image{ht}{False}{\defaultImageSize}{g-08_artificial-neural-networks-100-generations}{Entwicklung der Fitness des besten Individuums über $100$ Generationen}
+
+\image{ht}{False}{\defaultImageSize}{g-09_artificial-neural-networks-500-generations}{Entwicklung der Fitness des besten Individuums über $500$ Generationen}
+
+%\image{htp}{False}{\defaultImageSize}{g-10_artificial-neural-networks-1000-generations}{Entwicklung der Fitness des besten Individuums über $1000$ Generationen}
+
+\autoref{fig:g-08_artificial-neural-networks-100-generations} visualisiert diese Ergebnisse, wobei die roten Linien die ausgewerteten Generationen $10$, $20$, $50$ und $100$ markieren. Die blaue Kurve zeigt die Entwicklung der Fitness des besten Individuums über die $100$ Generationen hinweg. Es ist deutlich zu erkennen, dass sie sich immer weiter dem Optimum von $1.0$, markiert durch die grüne Linie, annähert.
+
+Als zusätzliches Experiment wurde das Training auch für $n = 500$ Generationen durchgeführt, um die weitere Entwicklung der Fitness beobachten zu können. Die Ergebnisse können \autoref{fig:g-09_artificial-neural-networks-500-generations} entnommen werden. Spätestens bei einer Verdopplung der evolvierten Generationen von $n = 100$ auf $n = 200$ hat die Fitness das Optimum von $1.0$ erreicht und bleibt auch bei weiteren Generationen konstant. Die Gewichte des \Gls{ann} wurden bereits soweit optimiert, dass die Ausgabe des \Gls{ann} die \textit{XOR}-Funktion nahezu perfekt approximiert.
+
+Insgesamt zeigt sich, dass der \Gls{ea} mit den gewählten Parametern und der Aktivierungsfunktion sehr effektiv darin ist, die Gewichtsmatrizen des \Gls{ann} auf die Approximation der \textit{XOR}-Funktion zu optimieren und bereits nach $100$ Generationen nahezu perfekte Ergebnisse zu liefern.
